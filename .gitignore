@@ -1,0 +1,8 @@
+bin/
+out/
+*.class
+.vscode/
+*.log
+Thumbs.db
+.DS_Store
+javafx-sdk*/

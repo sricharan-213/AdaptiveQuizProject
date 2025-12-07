@@ -1,0 +1,41 @@
+What is Java?
+A) A programming language
+B) An operating system
+C) A database
+D) A web server
+ANSWER: A
+TOPIC: Basics
+
+Which company originally developed Java?
+A) Microsoft
+B) Sun Microsystems
+C) Google
+D) Oracle
+ANSWER: B
+TOPIC: Basics
+
+Which keyword is used to inherit a class in Java?
+A) implements
+B) this
+C) extends
+D) super
+ANSWER: C
+TOPIC: OOP
+
+Which collection in Java does not allow duplicate elements?
+A) List
+B) Set
+C) Map
+D) Queue
+ANSWER: B
+TOPIC: Collections
+
+Which of the following is not a Java primitive type?
+A) int
+B) String
+C) double
+D) boolean
+ANSWER: B
+TOPIC: Basics
+
+

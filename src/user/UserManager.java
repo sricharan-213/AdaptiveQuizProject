@@ -1,0 +1,86 @@
+package user;
+
+import exceptions.UserNotFoundException;
+
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class UserManager {
+
+    private static final UserManager INSTANCE = new UserManager();
+
+    private final Map<String, User> userCache = new HashMap<>();
+    private User currentUser;
+
+    private UserManager() {
+    }
+
+    public static UserManager getInstance() {
+        return INSTANCE;
+    }
+
+    public void loadAllUsers() {
+        List<User> users = UserStorage.loadAllUsers();
+        userCache.clear();
+        for (User u : users) {
+            userCache.put(u.getUsername(), u);
+        }
+    }
+
+    public boolean userExists(String username) {
+        return userCache.containsKey(username) || UserStorage.loadUser(username) != null;
+    }
+
+    public User signup(String username, String password, String email) {
+        if (userExists(username)) {
+            return null;
+        }
+        Student user = new Student(username, password, email);
+        userCache.put(username, user);
+        UserStorage.saveUser(user);
+        return user;
+    }
+
+    public User login(String username, String password) throws UserNotFoundException {
+        User user = userCache.get(username);
+        if (user == null) {
+            user = UserStorage.loadUser(username);
+            if (user != null) {
+                userCache.put(username, user);
+            }
+        }
+        if (user == null) {
+            throw new UserNotFoundException("User not found");
+        }
+        if (!user.getPassword().equals(password)) {
+            throw new UserNotFoundException("Invalid password");
+        }
+        currentUser = user;
+        return user;
+    }
+
+    public void logout() {
+        currentUser = null;
+    }
+
+    public User getCurrentUser() {
+        return currentUser;
+    }
+
+    public Map<String, User> getUserCache() {
+        return userCache;
+    }
+
+    public void recordQuizResult(int score, int totalQuestions, long totalTimeSeconds) {
+        if (currentUser == null) {
+            return;
+        }
+        String now = Instant.now().toString();
+        currentUser.addHistory(new User.QuizHistoryEntry(now, score, totalQuestions, totalTimeSeconds));
+        UserStorage.saveUser(currentUser);
+    }
+}
+
+

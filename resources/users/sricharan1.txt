@@ -1,0 +1,8 @@
+username=sricharan1
+password=1234
+email=s@gmail.com
+history_count=1
+h0_datetime=2025-11-27T04:30:58.831213600Z
+h0_score=1
+h0_totalQuestions=20
+h0_totalTimeSeconds=104

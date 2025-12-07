@@ -1,0 +1,8 @@
+username=theja
+password=1234
+email=t@gmail.com
+history_count=1
+h0_datetime=2025-11-28T04:46:24.960321600Z
+h0_score=3
+h0_totalQuestions=5
+h0_totalTimeSeconds=22
