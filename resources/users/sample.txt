@@ -1,8 +1,0 @@
-username=sample
-password=1234
-email=s@gmail.com
-history_count=1
-h0_datetime=2025-11-27T05:53:06.250543800Z
-h0_score=0
-h0_totalQuestions=20
-h0_totalTimeSeconds=3

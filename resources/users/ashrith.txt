@@ -1,8 +1,0 @@
-username=ashrith
-password=1234
-email=a@gmail.com
-history_count=1
-h0_datetime=2025-11-27T08:22:05.330222500Z
-h0_score=2
-h0_totalQuestions=5
-h0_totalTimeSeconds=48

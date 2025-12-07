@@ -1,4 +1,0 @@
-username=rw3d
-password=1111
-email=ewgfew@
-history_count=0

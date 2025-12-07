@@ -1,8 +1,0 @@
-username=varunx
-password=1234
-email=v@gmail.com
-history_count=1
-h0_datetime=2025-11-27T05:40:46.923317900Z
-h0_score=5
-h0_totalQuestions=20
-h0_totalTimeSeconds=75

@@ -1,8 +1,0 @@
-username=ramu
-password=1234
-email=sufnieun@gmail.com
-history_count=1
-h0_datetime=2025-11-26T18:04:14.002266800Z
-h0_score=2
-h0_totalQuestions=20
-h0_totalTimeSeconds=41

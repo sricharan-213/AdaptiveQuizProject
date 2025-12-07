@@ -1,8 +1,0 @@
-username=srishanth
-password=1234
-email=s@gmail.com
-history_count=1
-h0_datetime=2025-11-27T04:26:13.425778900Z
-h0_score=4
-h0_totalQuestions=5
-h0_totalTimeSeconds=40
