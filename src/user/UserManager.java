@@ -1,6 +1,7 @@
 package user;
 
 import exceptions.UserNotFoundException;
+import quiz.Quiz;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -73,12 +74,34 @@ public class UserManager {
         return userCache;
     }
 
-    public void recordQuizResult(int score, int totalQuestions, long totalTimeSeconds) {
+    /**
+     * Record quiz result with full quiz data for replay capability
+     */
+    public void recordQuizResult(Quiz quiz, int score, int totalQuestions, long totalTimeSeconds) {
+        if (currentUser == null || quiz == null) {
+            return;
+        }
+        String now = Instant.now().toString();
+        String subject = quiz.getSubject() != null ? quiz.getSubject() : "General";
+        double pct = (totalQuestions == 0) ? 0.0 : (100.0 * score / totalQuestions);
+        // Serialize quiz data for replay
+        String questionData = QuizHistorySerializer.serializeQuiz(quiz);
+        currentUser.addHistory(new User.QuizHistoryEntry(now, subject, score, totalQuestions, pct, totalTimeSeconds, questionData));
+        UserStorage.saveUser(currentUser);
+    }
+
+    /**
+     * Record quiz result without detailed question data (backward compatibility)
+     * @deprecated Use recordQuizResult(Quiz, int, int, long) instead
+     */
+    @Deprecated
+    public void recordQuizResult(String subject, int score, int totalQuestions, long totalTimeSeconds) {
         if (currentUser == null) {
             return;
         }
         String now = Instant.now().toString();
-        currentUser.addHistory(new User.QuizHistoryEntry(now, score, totalQuestions, totalTimeSeconds));
+        double pct = (totalQuestions == 0) ? 0.0 : (100.0 * score / totalQuestions);
+        currentUser.addHistory(new User.QuizHistoryEntry(now, subject, score, totalQuestions, pct, totalTimeSeconds));
         UserStorage.saveUser(currentUser);
     }
 }

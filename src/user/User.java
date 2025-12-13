@@ -7,22 +7,38 @@ public class User {
 
     public static class QuizHistoryEntry {
         private String dateTimeIso;
+        private String subject;
         private int score;
         private int totalQuestions;
+        private double percentage;
         private long totalTimeSeconds;
+        // New field: serialized per-question data (JSON-like format for backward compatibility)
+        // Format: "q0_text|q0_optA|q0_optB|q0_optC|q0_optD|q0_correct|q0_selected|q0_topic|q0_time;q1_..."
+        private String questionData; // null for old entries
 
         public QuizHistoryEntry() {
         }
 
-        public QuizHistoryEntry(String dateTimeIso, int score, int totalQuestions, long totalTimeSeconds) {
+        public QuizHistoryEntry(String dateTimeIso, String subject, int score, int totalQuestions, double percentage, long totalTimeSeconds) {
+            this(dateTimeIso, subject, score, totalQuestions, percentage, totalTimeSeconds, null);
+        }
+
+        public QuizHistoryEntry(String dateTimeIso, String subject, int score, int totalQuestions, double percentage, long totalTimeSeconds, String questionData) {
             this.dateTimeIso = dateTimeIso;
+            this.subject = subject == null ? "General" : subject;
             this.score = score;
             this.totalQuestions = totalQuestions;
+            this.percentage = percentage;
             this.totalTimeSeconds = totalTimeSeconds;
+            this.questionData = questionData;
         }
 
         public String getDateTimeIso() {
             return dateTimeIso;
+        }
+
+        public String getSubject() {
+            return subject;
         }
 
         public int getScore() {
@@ -33,8 +49,27 @@ public class User {
             return totalQuestions;
         }
 
+        public double getPercentage() {
+            return percentage;
+        }
+
         public long getTotalTimeSeconds() {
             return totalTimeSeconds;
+        }
+
+        public String getQuestionData() {
+            return questionData;
+        }
+
+        public void setQuestionData(String questionData) {
+            this.questionData = questionData;
+        }
+
+        /**
+         * Check if this history entry has detailed question data for replay
+         */
+        public boolean hasDetailedData() {
+            return questionData != null && !questionData.isEmpty();
         }
     }
 

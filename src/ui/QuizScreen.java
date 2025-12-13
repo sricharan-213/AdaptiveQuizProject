@@ -34,6 +34,9 @@ public class QuizScreen extends BorderPane {
 
     private Timeline globalTimeline;
     private Timeline questionTimeline;
+    private Timeline countdownTimeline;
+    private Label timeLimitLabel;
+    private long timeLimitSeconds; // countdown seconds
     private long questionElapsed; // total seconds for current question (includes previous visits)
     private long questionStartTime; // the time when we switched to current question (for calculating increment)
 
@@ -112,8 +115,20 @@ public class QuizScreen extends BorderPane {
                 "-fx-padding: 5px 12px; " +
                 "-fx-background-radius: 6px;");
 
-        top.getChildren().addAll(globalLbl, globalTimerLabel, questionLbl, questionTimerLabel);
-        setTop(top);
+        // countdown/time limit label (if applicable)
+        timeLimitLabel = new Label("");
+        timeLimitLabel.setStyle("-fx-text-fill: #B71C1C; -fx-font-size: 14px; -fx-font-weight: bold; -fx-padding: 5px 12px; -fx-background-color: #FFEBEE; -fx-background-radius: 6px;");
+        // Subject label at left
+        Label subjectLabel = new Label("Subject: " + (quiz.getSubject() == null ? "General" : quiz.getSubject()));
+        subjectLabel.setStyle("-fx-text-fill: #0D47A1; -fx-font-size: 16px; -fx-font-weight: bold;");
+        HBox leftBox = new HBox(subjectLabel);
+        leftBox.setAlignment(Pos.CENTER_LEFT);
+        BorderPane topContainer = new BorderPane();
+        topContainer.setLeft(leftBox);
+        HBox rightBox = new HBox(10, globalLbl, globalTimerLabel, questionLbl, questionTimerLabel, timeLimitLabel);
+        rightBox.setAlignment(Pos.CENTER_RIGHT);
+        topContainer.setRight(rightBox);
+        setTop(topContainer);
 
         // Center content
         VBox center = new VBox(20);
@@ -225,6 +240,25 @@ public class QuizScreen extends BorderPane {
         }));
         questionTimeline.setCycleCount(Timeline.INDEFINITE);
         questionTimeline.playFromStart();
+
+        // Start countdown time limit: default 1 minute per question
+        timeLimitSeconds = (long) quiz.getSelectedCount() * 60L;
+        if (timeLimitSeconds > 0) {
+            timeLimitLabel.setText("Time left: " + TimeUtil.formatSeconds(timeLimitSeconds));
+            if (countdownTimeline != null) countdownTimeline.stop();
+            countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), ev -> {
+                timeLimitSeconds--;
+                if (timeLimitSeconds <= 0) {
+                    timeLimitLabel.setText("Time left: 00:00");
+                    // auto-submit
+                    autoSubmit();
+                } else {
+                    timeLimitLabel.setText("Time left: " + TimeUtil.formatSeconds(timeLimitSeconds));
+                }
+            }));
+            countdownTimeline.setCycleCount(Timeline.INDEFINITE);
+            countdownTimeline.play();
+        }
     }
 
     private void pauseQuestionTimer() {
@@ -364,9 +398,33 @@ public class QuizScreen extends BorderPane {
         int totalQ = quiz.getTotalQuestions();
         long totalTime = quiz.getGlobalElapsedSeconds();
 
-        UserManager.getInstance().recordQuizResult(score, totalQ, totalTime);
+        // record with full quiz data for replay
+        UserManager.getInstance().recordQuizResult(quiz, score, totalQ, totalTime);
 
         Analysis analysis = new Analysis(quiz, score, totalTime);
+        App.setRoot(new ResultsScreen(quiz, analysis));
+    }
+
+    // Auto-submit without confirmation when countdown reaches zero
+    private void autoSubmit() {
+        // Stop timers and lock UI similar to submitQuiz
+        pauseQuestionTimer();
+        long increment = questionElapsed - questionStartTime;
+        if (increment > 0) {
+            quiz.addTimeForQuestion(quiz.getCurrentIndex(), increment);
+        }
+        quiz.stopGlobalTimer();
+        if (globalTimeline != null) globalTimeline.stop();
+        if (questionTimeline != null) questionTimeline.stop();
+        if (countdownTimeline != null) countdownTimeline.stop();
+
+        int score = quiz.calculateScore();
+        int totalQ = quiz.getTotalQuestions();
+        long totalTime = quiz.getGlobalElapsedSeconds();
+
+        UserManager.getInstance().recordQuizResult(quiz.getSubject(), score, totalQ, totalTime);
+        Analysis analysis = new Analysis(quiz, score, totalTime);
+        // Navigate to results
         App.setRoot(new ResultsScreen(quiz, analysis));
     }
 }

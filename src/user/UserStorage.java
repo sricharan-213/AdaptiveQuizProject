@@ -24,9 +24,15 @@ public class UserStorage {
         int idx = 0;
         for (User.QuizHistoryEntry h : user.getHistory()) {
             lines.add("h" + idx + "_datetime=" + h.getDateTimeIso());
+            lines.add("h" + idx + "_subject=" + (h.getSubject() == null ? "General" : h.getSubject()));
             lines.add("h" + idx + "_score=" + h.getScore());
             lines.add("h" + idx + "_totalQuestions=" + h.getTotalQuestions());
+            lines.add("h" + idx + "_percentage=" + h.getPercentage());
             lines.add("h" + idx + "_totalTimeSeconds=" + h.getTotalTimeSeconds());
+            // Save question data if present (new format)
+            if (h.getQuestionData() != null && !h.getQuestionData().isEmpty()) {
+                lines.add("h" + idx + "_questionData=" + h.getQuestionData());
+            }
             idx++;
         }
         FileHandler.writeLines(file, lines);
@@ -62,12 +68,17 @@ public class UserStorage {
         Student user = new Student(u, p, e);
         for (int i = 0; i < historyCount; i++) {
             String dt = null;
+            String subject = "General";
             int score = 0;
             int totalQ = 0;
+            double percentage = 0.0;
             long totalTime = 0;
+            String questionData = null;
             for (String line : lines) {
                 if (line.startsWith("h" + i + "_datetime=")) {
                     dt = line.substring(("h" + i + "_datetime=").length());
+                } else if (line.startsWith("h" + i + "_subject=")) {
+                    subject = line.substring(("h" + i + "_subject=").length());
                 } else if (line.startsWith("h" + i + "_score=")) {
                     try {
                         score = Integer.parseInt(line.substring(("h" + i + "_score=").length()));
@@ -78,15 +89,26 @@ public class UserStorage {
                         totalQ = Integer.parseInt(line.substring(("h" + i + "_totalQuestions=").length()));
                     } catch (NumberFormatException ignored) {
                     }
+                } else if (line.startsWith("h" + i + "_percentage=")) {
+                    try {
+                        percentage = Double.parseDouble(line.substring(("h" + i + "_percentage=").length()));
+                    } catch (NumberFormatException ignored) {
+                    }
                 } else if (line.startsWith("h" + i + "_totalTimeSeconds=")) {
                     try {
                         totalTime = Long.parseLong(line.substring(("h" + i + "_totalTimeSeconds=").length()));
                     } catch (NumberFormatException ignored) {
                     }
+                } else if (line.startsWith("h" + i + "_questionData=")) {
+                    questionData = line.substring(("h" + i + "_questionData=").length());
                 }
             }
             if (dt != null) {
-                user.addHistory(new User.QuizHistoryEntry(dt, score, totalQ, totalTime));
+                // Backward compatibility: if percentage missing, compute
+                if (percentage == 0.0 && totalQ > 0) {
+                    percentage = (100.0 * score) / totalQ;
+                }
+                user.addHistory(new User.QuizHistoryEntry(dt, subject, score, totalQ, percentage, totalTime, questionData));
             }
         }
         return user;

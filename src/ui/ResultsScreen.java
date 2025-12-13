@@ -3,7 +3,6 @@ package ui;
 import analytics.Analysis;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.geometry.Side;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.CategoryAxis;
 import javafx.scene.chart.NumberAxis;
@@ -21,8 +20,13 @@ import quiz.Question;
 import quiz.Quiz;
 import ui.AnalyticsScreen;
 import ui.MainMenuScreen;
+import user.QuizHistorySerializer;
+import user.User;
+import utils.DialogUtil;
 import utils.TimeUtil;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -72,8 +76,14 @@ public class ResultsScreen extends BorderPane {
         for (int i = 0; i < questions.size(); i++) {
             Question q = questions.get(i);
             boolean isCorrect = q.isCorrect();
-            String selected = q.getSelectedOption() != null ? q.getSelectedOption() : "Not answered";
-            String correct = q.getCorrectOption();
+            
+            // Get actual option text instead of letters
+            String selectedText = q.getSelectedOptionText();
+            String correctText = q.getCorrectOptionText();
+            
+            // Fallback to "Not answered" if no selection
+            String selectedDisplay = (selectedText != null) ? selectedText : "Not answered";
+            String correctDisplay = (correctText != null) ? correctText : "Unknown";
 
             HBox questionRow = new HBox(15);
             questionRow.setAlignment(Pos.CENTER_LEFT);
@@ -88,11 +98,13 @@ public class ResultsScreen extends BorderPane {
             qNumLabel.setStyle("-fx-text-fill: #212121; -fx-font-size: 15px; -fx-font-weight: bold;");
             qNumLabel.setWrapText(true);
 
-            Label resultLabel = new Label(
-                    isCorrect ?
-                            "✓ Correct - You selected: " + selected :
-                            "✗ Wrong - You selected: " + selected + " | Correct answer: " + correct
-            );
+            // Format: "Your answer: [text] | Correct answer: [text]"
+            Label resultLabel;
+            if (isCorrect) {
+                resultLabel = new Label("✓ Correct - Your answer: " + selectedDisplay);
+            } else {
+                resultLabel = new Label("✗ Wrong - Your answer: " + selectedDisplay + " | Correct answer: " + correctDisplay);
+            }
             resultLabel.setStyle(isCorrect
                     ? "-fx-text-fill: #2E7D32; -fx-font-size: 13px; -fx-font-weight: bold;"
                     : "-fx-text-fill: #C62828; -fx-font-size: 13px; -fx-font-weight: bold;"
@@ -210,5 +222,96 @@ public class ResultsScreen extends BorderPane {
 
         card.getChildren().addAll(titleLabel, valueLabel);
         return card;
+    }
+
+    /**
+     * Static method to show results from a history entry
+     * Recreates Quiz and Analysis objects from stored data
+     */
+    public static void showResultsFromHistory(User.QuizHistoryEntry history) {
+        if (history == null) {
+            DialogUtil.showError("Error", "Invalid history entry.");
+            return;
+        }
+
+        // Check if detailed data is available
+        if (!history.hasDetailedData()) {
+            DialogUtil.showInfo("Limited Data", 
+                "This quiz was taken before detailed tracking was enabled. " +
+                "Only summary information is available.");
+            // Show simplified view - we'll handle this case
+            showSimplifiedResults(history);
+            return;
+        }
+
+        // Deserialize question data
+        List<QuizHistorySerializer.QuestionData> questionDataList = 
+            QuizHistorySerializer.deserializeQuestions(history.getQuestionData());
+
+        if (questionDataList.isEmpty()) {
+            DialogUtil.showError("Error", "No question data found in history.");
+            return;
+        }
+
+        // Recreate Question objects
+        List<Question> questions = new ArrayList<>();
+        
+        for (int i = 0; i < questionDataList.size(); i++) {
+            QuizHistorySerializer.QuestionData qd = questionDataList.get(i);
+            List<String> options = new ArrayList<>();
+            options.add(qd.optionA);
+            options.add(qd.optionB);
+            options.add(qd.optionC);
+            options.add(qd.optionD);
+            
+            Question q = new Question(qd.text, options, qd.correctOption, qd.topic);
+            q.setSelectedOption(qd.selectedOption);
+            // Don't add time here - we'll set it via Quiz.addTimeForQuestion
+            questions.add(q);
+        }
+
+        // Recreate Quiz object (without timers - this is replay mode)
+        Quiz quiz = new Quiz(questions, history.getSubject(), questions.size());
+        // Set per-question times from stored data
+        for (int i = 0; i < questionDataList.size(); i++) {
+            QuizHistorySerializer.QuestionData qd = questionDataList.get(i);
+            quiz.addTimeForQuestion(i, qd.timeSpent);
+        }
+
+        // Recreate Analysis object
+        Analysis analysis = new Analysis(quiz, history.getScore(), history.getTotalTimeSeconds());
+
+        // Show results screen (same as normal flow)
+        App.setRoot(new ResultsScreen(quiz, analysis));
+    }
+
+    /**
+     * Show simplified results for old history entries without detailed data
+     */
+    private static void showSimplifiedResults(User.QuizHistoryEntry history) {
+        // Create a minimal Quiz with placeholder questions
+        List<Question> questions = new ArrayList<>();
+        for (int i = 0; i < history.getTotalQuestions(); i++) {
+            List<String> options = new ArrayList<>();
+            options.add("Option A");
+            options.add("Option B");
+            options.add("Option C");
+            options.add("Option D");
+            Question q = new Question("Question " + (i + 1) + " (Details not available)", 
+                options, "A", "General");
+            questions.add(q);
+        }
+        
+        Quiz quiz = new Quiz(questions, history.getSubject(), history.getTotalQuestions());
+        // Distribute time evenly across questions
+        long avgTime = history.getTotalQuestions() > 0 
+            ? history.getTotalTimeSeconds() / history.getTotalQuestions() 
+            : 0;
+        for (int i = 0; i < questions.size(); i++) {
+            quiz.addTimeForQuestion(i, avgTime);
+        }
+        
+        Analysis analysis = new Analysis(quiz, history.getScore(), history.getTotalTimeSeconds());
+        App.setRoot(new ResultsScreen(quiz, analysis));
     }
 }

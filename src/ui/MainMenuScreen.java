@@ -112,7 +112,13 @@ public class MainMenuScreen extends BorderPane {
         if (file == null) return;
 
         try {
-            Quiz quiz = new Quiz(QuizParser.parseFromFile(file));
+            // Parse full bank
+            java.util.List<quiz.Question> bank = QuizParser.parseFromFile(file);
+            String fname = file.getName();
+            String subject = fname.contains(".") ? fname.substring(0, fname.lastIndexOf('.')) : fname;
+            int selectN = 10; // default number of questions to pick
+            Quiz quiz = Quiz.fromBank(bank, subject, selectN);
+            DialogUtil.showInfo("Quiz setup", "This test will randomly select " + quiz.getSelectedCount() + " questions from subject: " + subject + ".");
             if (quiz.getTotalQuestions() == 0) {
                 DialogUtil.showError("Invalid file", "No questions found in the selected file.");
                 return;
